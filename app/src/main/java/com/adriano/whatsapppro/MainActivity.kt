@@ -1,23 +1,20 @@
 package com.adriano.whatsapppro
 
 import android.os.Bundle
+import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
@@ -27,6 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
@@ -35,16 +34,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val question = ChatBubbleData(
-            message = "Wie gehts",
-            date = "Gestern",
-            isSender = true
+        val bubbleFactory = ChatBubbleFactory()
+
+        val question = bubbleFactory.create(
+            message = "Wie Gehts",
+            isSender = true,
+            date = 1620478640000L
         )
 
-        val answer = ChatBubbleData(
+        val answer = bubbleFactory.create(
             message = "Gut",
-            date = "Gestern",
-            isSender = false
+            isSender = false,
+            date = 1620478640000L
         )
 
         setContent {
@@ -60,11 +61,15 @@ class MainActivity : ComponentActivity() {
                 systemUiController.setStatusBarColor(MaterialTheme.colors.primary)
 
                 Box(modifier = Modifier.fillMaxSize()) {
+
+                    Background()
+
                     LazyColumn {
                         items(chatBubbleList) {
                             ChatBubble(chatBubbleData = it)
                         }
                     }
+
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -78,8 +83,7 @@ class MainActivity : ComponentActivity() {
                         )
                         FloatingActionButton(
                             onClick = {
-                                val newBubble = ChatBubbleData(
-                                    date = "Now",
+                                val newBubble = bubbleFactory.create(
                                     isSender = true,
                                     message = textInput.value
                                 )
@@ -96,59 +100,23 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
             }
         }
     }
 
     @Composable
-    fun ChatBubble(chatBubbleData: ChatBubbleData) {
-        Surface(
-            color = if (chatBubbleData.isSender) MaterialTheme.colors.surface else MaterialTheme.colors.primary,
-            shape = if (chatBubbleData.isSender) senderShape() else receiverShape(),
-            elevation = 8.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    top = 16.dp,
-                    bottom = 16.dp,
-                    start = if (chatBubbleData.isSender) 16.dp else 64.dp,
-                    end = if (chatBubbleData.isSender) 64.dp else 16.dp,
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = chatBubbleData.message,
-                    color = MaterialTheme.colors.onSurface
-                )
-                Text(
-                    text = chatBubbleData.date,
-                    color = MaterialTheme.colors.onSurface,
-                    modifier = Modifier.align(Alignment.End),
-                    style = MaterialTheme.typography.caption
-                )
-            }
-        }
-    }
-
-    private fun receiverShape(): RoundedCornerShape {
-        return RoundedCornerShape(
-            topStart = 8.dp,
-            topEnd = 0.dp,
-            bottomEnd = 8.dp,
-            bottomStart = 8.dp
-        )
-
-    }
-
-    private fun senderShape(): RoundedCornerShape {
-        return RoundedCornerShape(
-            topStart = 0.dp,
-            topEnd = 8.dp,
-            bottomEnd = 8.dp,
-            bottomStart = 8.dp
+    private fun Background() {
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alpha = 0.1f,
+            painter = backgroundPainter(),
+            contentDescription = "background"
         )
     }
+
+    @Composable
+    private fun backgroundPainter() = painterResource(
+        if (isSystemInDarkTheme()) R.drawable.background_dark else R.drawable.background_light
+    )
 }
