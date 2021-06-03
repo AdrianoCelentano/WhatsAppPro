@@ -5,6 +5,7 @@ import android.text.format.DateUtils
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -15,8 +16,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
 import androidx.compose.material.TextField
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -27,12 +31,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://www.boredapi.com/api/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val service: BoredService = retrofit.create(BoredService::class.java)
 
         val bubbleFactory = ChatBubbleFactory()
 
@@ -60,46 +75,74 @@ class MainActivity : ComponentActivity() {
 
                 systemUiController.setStatusBarColor(MaterialTheme.colors.primary)
 
-                Box(modifier = Modifier.fillMaxSize()) {
-
-                    Background()
-
-                    LazyColumn {
-                        items(chatBubbleList) {
-                            ChatBubble(chatBubbleData = it)
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 16.dp)
-                    ) {
-                        TextField(
-                            value = textInput.value,
-                            onValueChange = {
-                                textInput.value = it
-                            }
-                        )
-                        FloatingActionButton(
-                            onClick = {
-                                val newBubble = bubbleFactory.create(
-                                    isSender = true,
-                                    message = textInput.value
-                                )
-                                chatBubbleList.add(newBubble)
-                                textInput.value = ""
-                            },
-                            modifier = Modifier.padding(start = 16.dp)
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            backgroundColor = MaterialTheme.colors.primary
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Send,
-                                tint = MaterialTheme.colors.onSecondary,
-                                contentDescription = "Senden"
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "Senden",
+                                tint = MaterialTheme.colors.onPrimary,
+                                modifier = Modifier.padding(start = 8.dp)
+                                    .align(Alignment.CenterVertically)
+                                    .clickable {
+                                        lifecycleScope.launch {
+                                            val serviceAnswer = service.getActivity()
+                                            val bubble = bubbleFactory.create(
+                                                message = serviceAnswer.activity,
+                                                isSender = true
+                                            )
+                                            chatBubbleList.add(bubble)
+                                        }
+                                    }
                             )
                         }
                     }
+                ) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+
+                        Background()
+
+                        LazyColumn {
+                            items(chatBubbleList) {
+                                ChatBubble(chatBubbleData = it)
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 16.dp)
+                        ) {
+                            TextField(
+                                value = textInput.value,
+                                onValueChange = {
+                                    textInput.value = it
+                                }
+                            )
+                            FloatingActionButton(
+                                onClick = {
+                                    val newBubble = bubbleFactory.create(
+                                        isSender = true,
+                                        message = textInput.value
+                                    )
+                                    chatBubbleList.add(newBubble)
+                                    textInput.value = ""
+                                },
+                                modifier = Modifier.padding(start = 16.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Send,
+                                    tint = MaterialTheme.colors.onSecondary,
+                                    contentDescription = "Senden"
+                                )
+                            }
+                        }
+                    }
+
                 }
+
             }
         }
     }
